@@ -1,0 +1,21 @@
+# --- Godot 4 ---
+.godot/
+/builds/
+
+# --- Reference repos --------------------------------------------------------
+# Local clones of the HoMM3 format authorities, used only while writing the
+# Python tooling. Not ours, never shipped. The manifest README stays tracked.
+/reference/*
+!/reference/README.md
+
+# --- Original game assets (COPYRIGHTED — MUST NOT be published) -------------
+# Extracted HoMM III art lives here. Committing it to a public repo would be
+# publishing copyrighted material — keep it local. Only the logical-name
+# manifest is tracked.
+/assets/*
+!/assets/manifest.json
+
+# --- OS / editor cruft ---
+Thumbs.db
+.DS_Store
+*.tmp
