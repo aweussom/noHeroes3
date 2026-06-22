@@ -67,8 +67,17 @@ any future distribution.
 `data/maps/`. Authority order for the format: VCMI > HeroWO/h3m2json > `h3m_description` spec.
 Start with **one** hand-picked, simple map.
 
+## Engine config (decided)
+
+- **Godot 4.5.2 stable, Standard build (GDScript)** — not the .NET build.
+- **Compatibility renderer** (`gl_compatibility`) for broad Android safety. Consequence: no
+  reliable `WorldEnvironment` glow on Android → get the bloom look via **additive-blend
+  sprites/materials + `Light2D`** (renderer-agnostic; the ypilot trick), not post-processing.
+- **`TileMapLayer`** nodes, never the deprecated `TileMap`.
+- **Export/debug on the real Android tablet from M0 onward** — touch is designed in, not bolted on.
+
 ## Open items
 
-- [ ] **Godot 4.x version** to target — blocks M0 (`TileMapLayer` / API differences).
+- [x] **Godot version** — 4.5.2 stable / Standard / GDScript (see Engine config above).
 - [ ] Which map(s) to remake first (a small, simple one for M1).
 - [ ] Creature / army subset for the combat MVP (M4).

@@ -1,0 +1,17 @@
+; Godot 4.5.2 — noHeroes3
+; Godot rewrites/expands this file on first open in the editor; that's normal.
+config_version=5
+
+[application]
+config/name="noHeroes3"
+config/description="Personal HoMM3-map remake for one player, on an Android tablet."
+run/main_scene="res://src/Main.tscn"
+config/features=PackedStringArray("4.5", "GL Compatibility")
+
+[autoload]
+GameState="*res://src/core/GameState.gd"
+AssetLibrary="*res://src/assets/AssetLibrary.gd"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"

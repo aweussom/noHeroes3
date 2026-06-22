@@ -1,0 +1,4 @@
+{
+  "_comment": "Logical asset name -> res:// path. Filled in once tooling extracts art into assets/. Only this file is tracked; the art itself is gitignored.",
+  "example.hero.knight.idle": "res://assets/sprites/hero_knight_idle.png"
+}

@@ -1,0 +1,33 @@
+[gd_scene load_steps=7 format=3]
+
+; Root scene of noHeroes3 — the adventure map. Set as the project main scene.
+; Node base types match each script's `extends`; MapView.terrain_layer points at
+; the TerrainLayer child. Everything is wired but inert until the M1 TODOs land.
+
+[ext_resource type="Script" path="res://src/Main.gd" id="1"]
+[ext_resource type="Script" path="res://src/map/MapView.gd" id="2"]
+[ext_resource type="Script" path="res://src/map/FogLayer.gd" id="3"]
+[ext_resource type="Script" path="res://src/map/CameraRig.gd" id="4"]
+[ext_resource type="Script" path="res://src/input/TouchInput.gd" id="5"]
+[ext_resource type="Script" path="res://src/ui/HUD.gd" id="6"]
+
+[node name="Main" type="Node"]
+script = ExtResource("1")
+
+[node name="MapView" type="Node2D" parent="."]
+script = ExtResource("2")
+terrain_layer = NodePath("TerrainLayer")
+
+[node name="TerrainLayer" type="TileMapLayer" parent="MapView"]
+
+[node name="FogLayer" type="CanvasModulate" parent="."]
+script = ExtResource("3")
+
+[node name="CameraRig" type="Camera2D" parent="."]
+script = ExtResource("4")
+
+[node name="TouchInput" type="Node" parent="."]
+script = ExtResource("5")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("6")
