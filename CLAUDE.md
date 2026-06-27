@@ -46,4 +46,6 @@ Caveats: `.h3m` is gzip-compressed on disk (specs describe the uncompressed stre
 
 ## Status
 
-No Godot project scaffolded yet. Sibling `ypilot` (`C:\devel\aweussom\javascript\ypilot`) has reusable patterns: Python map→JSON tooling, and a glow/additive-blend effect approach to translate to Godot.
+Godot project scaffolded and playable. M1 (map render) and M2 (hero movement: A* pathfinding, tap-to-move, movement budget) are done; M3 part 1 (fog-of-war mechanic + luminous night lighting) is done — real sprites and autosave still pending. The Python asset pipeline is two-thirds built: `extract_lod` and `pcx_to_png` work and are verified; `def_to_atlas` is in progress. See `PLAN.md` for milestone detail and `README.md` for layout + how to run. Sibling `ypilot` (`C:\devel\aweussom\javascript\ypilot`) remains the reference for the glow/additive-blend look.
+
+Engine: **Godot 4.7-stable, Compatibility renderer** → no reliable WorldEnvironment glow on Android, so the glow is **additive-blend + Light2D** (renderer-agnostic), not post-processing.

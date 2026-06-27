@@ -44,22 +44,28 @@ Principles that keep it reviewable:
 
 ## Milestones (each leaves the game runnable + independently reviewable)
 
-- **M0 — Scaffold.** `project.godot`, folder tree, stubbed GDScript with interfaces. *Blocked
-  on: Godot version choice.*
-- **M1 — Map on screen.** `h3m_to_json.py` converts one map → `MapModel` → `MapView` renders
-  tiles + objects; camera pans/zooms by touch. *Proves parser + renderer + coordinate system.*
-- **M2 — Move a hero.** Tap a tile → hero pathfinds and moves, movement points spent. *Proves
-  the touch loop.*
-- **M3 — The look + persistence.** Dark luminous-on-black theme, fog-of-war (CanvasModulate +
-  Light2D), glow layer; autosave + instant resume. *Proves it's pleasant to play in bed.*
-- **M4 — Combat.** Enter a hex battle scene, deterministic AI opponent, resolve, return to map.
+- **M0 — Scaffold.** ✅ `project.godot`, folder tree, stubbed GDScript with interfaces.
+- **M1 — Map on screen.** ✅ `MapModel` → `MapView` renders placeholder terrain; camera
+  pans/zooms by touch. (Still on placeholder colours until `def_to_atlas` lands real terrain.)
+- **M2 — Move a hero.** ✅ Tap a tile → `Pathfinder` (A* over passability) → hero walks as far
+  as movement points allow; End Turn refills. *Touch loop proven.*
+- **M3 — The look + persistence.** 🟡 *Part 1 done:* fog-of-war as a real mechanic (`FogModel`
+  HIDDEN/EXPLORED/VISIBLE + `FogView` veil) and luminous night lighting (`FogLayer`
+  CanvasModulate + a warm hero `Light2D`, additive token). *Still pending:* real HoMM3 sprites
+  (blocked on the asset pipeline) and autosave + instant resume.
+- **M4 — Combat.** ⬜ Enter a hex battle scene, deterministic AI opponent, resolve, return to map.
 
 ## Asset pipeline (Python, build-time)
 
-`extract_lod.py` (GOG `.lod` → `.def`/`.pcx`) → `def_to_atlas.py` (`.def` → PNG atlas + frame
-JSON) → drop into `assets/` and register in `manifest.json`. Source: the **GOG Complete
-(RoE+AB+SoD)** install — *not* the Steam HD Edition. Output is the swappable layer; kept out of
-any future distribution.
+`extract_lod.py` (GOG `.lod` → members) → `pcx_to_png.py` (`.pcx` stills → PNG) and
+`def_to_atlas.py` (`.def` → PNG atlas + frame JSON) → drop into `assets/` and register in
+`manifest.json`. Source: the **GOG Complete (RoE+AB+SoD)** install at
+`C:\Program Files (x86)\GOG Galaxy\Games\HoMM 3 Complete\Data` — *not* the Steam HD Edition.
+Output is the swappable layer; kept out of any future distribution.
+
+Status: **stage 1 `extract_lod` ✅** (verified on H3sprite/H3bitmap), **stage 2 `pcx_to_png` ✅**
+(verified end-to-end), **stage 3 `def_to_atlas` 🟡** in progress. First real target: terrain
+tilesets to replace `MapView`'s placeholder colours.
 
 ## Map pipeline (Python, build-time)
 
