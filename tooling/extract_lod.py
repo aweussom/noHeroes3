@@ -119,7 +119,7 @@ def _main() -> None:
         return
 
     count = lod.extract_all(args.out, args.filter)
-    print(f"Extracted {count} member(s) from {lod.path.name} → {args.out}")
+    print(f"Extracted {count} member(s) from {lod.path.name} -> {args.out}")
 
 
 if __name__ == "__main__":
