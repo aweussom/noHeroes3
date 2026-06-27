@@ -9,9 +9,10 @@ extends CanvasModulate
 ## The "glow" is additive-blend sprites + Light2D (renderer-agnostic, the same trick as ypilot),
 ## NOT WorldEnvironment glow, which the Compatibility renderer can't be relied on for on Android.
 
-# Mild and cool. Keep it gentle: the fog veil and the dark terrain colours already carry most of
-# the darkness, so this only needs to set the tone, not black the screen out.
-const NIGHT_TONE := Color(0.62, 0.66, 0.78)
+# A bright, faintly cool wash — NOT a dimmer. Explored terrain should stay nearly as readable as
+# active sight, so this barely darkens; the dark mood comes from the hidden-fog expanse and the
+# already-muted terrain colours. The hero's warm Light2D pool reads as a glow against the cool tint.
+const NIGHT_TONE := Color(0.86, 0.89, 0.97)
 
 func _ready() -> void:
 	color = NIGHT_TONE

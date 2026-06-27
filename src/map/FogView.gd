@@ -7,8 +7,10 @@ extends Node2D
 ## light_mask = 0 keeps the hero's light from lifting the veil: the model alone decides visibility,
 ## the light only flatters the terrain underneath the clear (VISIBLE) tiles.
 
-# Veils are near-black with a faint cool tint so remembered terrain reads without glare.
-const EXPLORED_VEIL := Color(0.02, 0.03, 0.05, 0.62)
+# Explored terrain stays nearly as bright as active sight (HoMM3-style: once seen, you see it) —
+# only a whisper of cool veil marks it as "remembered, not watched". Hidden stays near-opaque
+# black; that large unexplored expanse is what keeps the screen dark, not dimming what she sees.
+const EXPLORED_VEIL := Color(0.03, 0.04, 0.07, 0.10)
 const HIDDEN_VEIL := Color(0.01, 0.01, 0.02, 0.99)
 
 var _fog: FogModel
