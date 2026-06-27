@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 ; Root scene of noHeroes3 — the adventure map. Set as the project main scene.
 ; Node base types match each script's `extends`; MapView.terrain_layer points at
@@ -11,6 +11,7 @@
 [ext_resource type="Script" path="res://src/input/TouchInput.gd" id="5"]
 [ext_resource type="Script" path="res://src/ui/HUD.gd" id="6"]
 [ext_resource type="Script" path="res://src/map/HeroView.gd" id="7"]
+[ext_resource type="Script" path="res://src/map/FogView.gd" id="8"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1")
@@ -23,6 +24,9 @@ terrain_layer = NodePath("TerrainLayer")
 
 [node name="HeroView" type="Node2D" parent="MapView"]
 script = ExtResource("7")
+
+[node name="FogView" type="Node2D" parent="MapView"]
+script = ExtResource("8")
 
 [node name="FogLayer" type="CanvasModulate" parent="."]
 script = ExtResource("3")

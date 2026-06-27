@@ -7,6 +7,7 @@ signal turn_changed(player_index: int)
 var rng := RandomNumberGenerator.new()
 var current_player: int = 0
 var map: MapModel = null
+var fog: FogModel = null   # fog-of-war state for `map`; rendered by FogView
 var heroes: Array = []   # all heroes in play (just the player's, for now)
 
 func _ready() -> void:

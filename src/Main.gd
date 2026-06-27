@@ -8,6 +8,7 @@ const HERO_MOVEMENT := 2000   # ~20 straight tiles per turn (HoMM3 cost units; s
 
 @onready var _map_view: MapView = $MapView
 @onready var _hero_view: HeroView = $MapView/HeroView
+@onready var _fog_view: FogView = $MapView/FogView
 @onready var _camera: CameraRig = $CameraRig
 @onready var _touch: TouchInput = $TouchInput
 @onready var _hud: HUD = $HUD
@@ -26,6 +27,9 @@ func _ready() -> void:
 	_camera.frame_map(_map_view.map_bounds())
 	_pathfinder = Pathfinder.new(_model)
 
+	GameState.fog = FogModel.new(_model.width, _model.height)
+	_fog_view.show_fog(GameState.fog)
+
 	_hero = Hero.new()
 	_hero.id = "player"
 	_hero.place(HERO_START)
@@ -33,6 +37,10 @@ func _ready() -> void:
 	_hero.refill_movement()
 	GameState.heroes.append(_hero)
 	_hero_view.set_cell(_hero.cell())
+
+	# Reveal the hero's starting surroundings.
+	GameState.fog.reveal_disc(_hero.cell(), _hero.sight_radius, FogModel.VISIBLE)
+	_fog_view.refresh()
 
 	# Camera gestures.
 	_touch.panned.connect(_camera.pan_by)
@@ -67,7 +75,17 @@ func _on_tapped(screen_position: Vector2) -> void:
 	_hero.movement_points -= int(reach["cost"])
 	_hero.place(steps[-1])
 	_hero_view.move_along(steps)
+	_reveal_along(steps)
 	_update_hud()
+
+# Walking reveals terrain along the route: tiles passed become EXPLORED (remembered), and only
+# the area around the hero's final cell stays VISIBLE.
+func _reveal_along(steps: Array[Vector2i]) -> void:
+	GameState.fog.demote_visible()
+	for cell in steps:
+		GameState.fog.reveal_disc(cell, _hero.sight_radius, FogModel.EXPLORED)
+	GameState.fog.reveal_disc(_hero.cell(), _hero.sight_radius, FogModel.VISIBLE)
+	_fog_view.refresh()
 
 func _on_turn_changed(_player_index: int) -> void:
 	_update_hud()
