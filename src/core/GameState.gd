@@ -7,6 +7,7 @@ signal turn_changed(player_index: int)
 var rng := RandomNumberGenerator.new()
 var current_player: int = 0
 var map: MapModel = null
+var heroes: Array = []   # all heroes in play (just the player's, for now)
 
 func _ready() -> void:
 	# Deterministic by default so AI/combat are reproducible while developing.
@@ -14,5 +15,8 @@ func _ready() -> void:
 	rng.seed = 1999
 
 func end_turn() -> void:
-	# TODO(M2): advance turn, refill hero movement, run AI players.
+	# Refill every hero's movement for the new turn.
+	# TODO(M4): advance to other players and run AI before returning to the player.
+	for hero in heroes:
+		hero.refill_movement()
 	turn_changed.emit(current_player)
