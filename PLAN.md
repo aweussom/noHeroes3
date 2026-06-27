@@ -69,7 +69,8 @@ Start with **one** hand-picked, simple map.
 
 ## Engine config (decided)
 
-- **Godot 4.5.2 stable, Standard build (GDScript)** — not the .NET build.
+- **Godot 4.7 stable, Standard build (GDScript)** — not the .NET build. (Targeting the version
+  installed at `C:\devel\godot`; M1 code validated against it headless.)
 - **Compatibility renderer** (`gl_compatibility`) for broad Android safety. Consequence: no
   reliable `WorldEnvironment` glow on Android → get the bloom look via **additive-blend
   sprites/materials + `Light2D`** (renderer-agnostic; the ypilot trick), not post-processing.
@@ -78,6 +79,6 @@ Start with **one** hand-picked, simple map.
 
 ## Open items
 
-- [x] **Godot version** — 4.5.2 stable / Standard / GDScript (see Engine config above).
+- [x] **Godot version** — 4.7 stable / Standard / GDScript (see Engine config above).
 - [ ] Which map(s) to remake first (a small, simple one for M1).
 - [ ] Creature / army subset for the combat MVP (M4).
