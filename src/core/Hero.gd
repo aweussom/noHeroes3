@@ -19,3 +19,21 @@ func place(cell: Vector2i) -> void:
 
 func refill_movement() -> void:
 	movement_points = max_movement_points
+
+# --- Save/restore (see SaveGame) ---
+
+func to_dict() -> Dictionary:
+	return {
+		"id": id, "x": x, "y": y,
+		"mp": movement_points, "max_mp": max_movement_points, "sight": sight_radius,
+	}
+
+static func from_dict(d: Dictionary) -> Hero:
+	var h := Hero.new()
+	h.id = String(d.get("id", ""))
+	h.x = int(d.get("x", 0))
+	h.y = int(d.get("y", 0))
+	h.movement_points = int(d.get("mp", 0))
+	h.max_movement_points = int(d.get("max_mp", 0))
+	h.sight_radius = int(d.get("sight", 4))
+	return h

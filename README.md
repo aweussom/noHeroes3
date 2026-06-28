@@ -17,7 +17,7 @@ the forward plan and milestones live in [`PLAN.md`](./PLAN.md).
 |-----------|-------|
 | **M1** — map on screen (model, placeholder terrain, touch camera) | ✅ done |
 | **M2** — move a hero (A* pathfinding, tap-to-move, movement budget) | ✅ done |
-| **M3** — the look (fog-of-war + luminous night lighting) | 🟡 part 1 done; real sprites + persistence pending |
+| **M3** — the look + persistence (fog-of-war, night lighting, real art, autosave/resume) | ✅ done |
 | **M4** — combat | ⬜ not started |
 
 **Asset pipeline (Python, build-time):** stage 1 `extract_lod` ✅ · stage 2 `pcx_to_png` ✅ ·
@@ -27,7 +27,7 @@ stage 3 `def_to_atlas` 🟡 in progress.
 
 ```
 src/        Godot game (GDScript)
-  core/     pure data, no rendering — GameState, MapModel, Hero, FogModel, Pathfinder
+  core/     pure data, no rendering — GameState, MapModel, Hero, FogModel, Pathfinder, SaveGame
   map/      rendering & camera — MapView, HeroView, FogView, FogLayer, CameraRig
   input/    touch → intents — TouchInput
   ui/       HUD

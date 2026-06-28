@@ -19,6 +19,7 @@ config/features=PackedStringArray("4.7", "GL Compatibility")
 
 GameState="*res://src/core/GameState.gd"
 AssetLibrary="*res://src/assets/AssetLibrary.gd"
+SaveGame="*res://src/core/SaveGame.gd"
 
 [rendering]
 

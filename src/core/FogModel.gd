@@ -48,3 +48,16 @@ func reveal_disc(center: Vector2i, radius: int, min_state: int) -> void:
 			var i := y * width + x
 			if _state[i] < min_state:
 				_state[i] = min_state
+
+# --- Save/restore (see SaveGame) ---
+# The per-cell state is a PackedByteArray; base64 keeps it compact and JSON-safe.
+
+func to_dict() -> Dictionary:
+	return {"w": width, "h": height, "state": Marshalls.raw_to_base64(_state)}
+
+static func from_dict(d: Dictionary) -> FogModel:
+	var fog := FogModel.new(int(d.get("w", 0)), int(d.get("h", 0)))
+	var bytes := Marshalls.base64_to_raw(String(d.get("state", "")))
+	if bytes.size() == fog._state.size():
+		fog._state = bytes
+	return fog

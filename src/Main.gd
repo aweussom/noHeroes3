@@ -1,6 +1,10 @@
 extends Node
 ## Root coordinator: boots the game and (later) switches between the adventure map and battle.
 ## Attached to the root of Main.tscn, which is the project's main scene.
+##
+## On launch it resumes the autosave if one exists, else starts a new game; from then on it
+## autosaves after every move, every turn, and whenever the app is paused or closed — so the game
+## is always safe to drop and resume cold (see SaveGame).
 
 const SAMPLE_MAP := "res://data/maps/sample.json"
 const HERO_START := Vector2i(2, 2)
@@ -18,30 +22,6 @@ var _pathfinder: Pathfinder
 var _hero: Hero
 
 func _ready() -> void:
-	_model = _load_map(SAMPLE_MAP)
-	if _model == null:
-		return
-
-	GameState.map = _model
-	_map_view.show_map(_model)
-	_camera.frame_map(_map_view.map_bounds())
-	_pathfinder = Pathfinder.new(_model)
-
-	GameState.fog = FogModel.new(_model.width, _model.height)
-	_fog_view.show_fog(GameState.fog)
-
-	_hero = Hero.new()
-	_hero.id = "player"
-	_hero.place(HERO_START)
-	_hero.max_movement_points = HERO_MOVEMENT
-	_hero.refill_movement()
-	GameState.heroes.append(_hero)
-	_hero_view.set_cell(_hero.cell())
-
-	# Reveal the hero's starting surroundings.
-	GameState.fog.reveal_disc(_hero.cell(), _hero.sight_radius, FogModel.VISIBLE)
-	_fog_view.refresh()
-
 	# Camera gestures.
 	_touch.panned.connect(_camera.pan_by)
 	_touch.zoomed.connect(_camera.zoom_at)
@@ -50,7 +30,72 @@ func _ready() -> void:
 	_hud.end_turn_requested.connect(GameState.end_turn)
 	GameState.turn_changed.connect(_on_turn_changed)
 
+	if SaveGame.has_save():
+		_resume(SaveGame.read())
+	if _hero == null:        # no save, or it was unusable — start fresh
+		_new_game()
+
 	_update_hud()
+
+# Build the map render + pathfinder for a model (shared by new game and resume).
+func _setup_map(model: MapModel) -> void:
+	_model = model
+	GameState.map = model
+	_map_view.show_map(model)
+	_pathfinder = Pathfinder.new(model)
+
+func _new_game() -> void:
+	var model := _load_map(SAMPLE_MAP)
+	if model == null:
+		return
+	GameState.map_source = SAMPLE_MAP
+	_setup_map(model)
+
+	GameState.fog = FogModel.new(model.width, model.height)
+	_fog_view.show_fog(GameState.fog)
+
+	_hero = Hero.new()
+	_hero.id = "player"
+	_hero.place(HERO_START)
+	_hero.max_movement_points = HERO_MOVEMENT
+	_hero.refill_movement()
+	GameState.heroes.clear()
+	GameState.heroes.append(_hero)
+	_hero_view.set_cell(_hero.cell())
+
+	# Reveal the hero's starting surroundings.
+	GameState.fog.reveal_disc(_hero.cell(), _hero.sight_radius, FogModel.VISIBLE)
+	_fog_view.refresh()
+
+	_camera.frame_map(_map_view.map_bounds())
+	_autosave()
+
+# Reconstruct a game from a save dict. Leaves _hero null (so _ready falls back to a new game) if
+# the save is unusable.
+func _resume(data: Dictionary) -> void:
+	var model := _load_map(String(data.get("map", SAMPLE_MAP)))
+	if model == null:
+		return
+	GameState.map_source = String(data.get("map", SAMPLE_MAP))
+	_setup_map(model)
+
+	GameState.current_player = int(data.get("current_player", 0))
+	if data.has("rng_state"):
+		GameState.rng.state = int(String(data["rng_state"]))
+
+	GameState.heroes.clear()
+	for hero_data in data.get("heroes", []):
+		GameState.heroes.append(Hero.from_dict(hero_data))
+	if GameState.heroes.is_empty():
+		return   # corrupt save -> caller starts a new game
+	_hero = GameState.heroes[0]
+
+	var fog_data: Dictionary = data.get("fog", {})
+	GameState.fog = FogModel.from_dict(fog_data) if not fog_data.is_empty() else FogModel.new(model.width, model.height)
+	_fog_view.show_fog(GameState.fog)
+
+	_hero_view.set_cell(_hero.cell())
+	_apply_view(data.get("view", {}))
 
 # Tap a tile -> walk the hero as far along the path as movement allows.
 func _on_tapped(screen_position: Vector2) -> void:
@@ -77,6 +122,7 @@ func _on_tapped(screen_position: Vector2) -> void:
 	_hero_view.move_along(steps)
 	_reveal_along(steps)
 	_update_hud()
+	_autosave()
 
 # Walking reveals terrain along the route: tiles passed become EXPLORED (remembered), and only
 # the area around the hero's final cell stays VISIBLE.
@@ -89,9 +135,31 @@ func _reveal_along(steps: Array[Vector2i]) -> void:
 
 func _on_turn_changed(_player_index: int) -> void:
 	_update_hud()
+	_autosave()
 
 func _update_hud() -> void:
-	_hud.update_movement(_hero.movement_points, _hero.max_movement_points)
+	if _hero != null:
+		_hud.update_movement(_hero.movement_points, _hero.max_movement_points)
+
+# Persist now. Cheap (small JSON), so we can call it on every meaningful change.
+func _autosave() -> void:
+	SaveGame.write(_view_state())
+
+# Save on the moments she actually puts the tablet down: app backgrounded or window closed.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_APPLICATION_PAUSED:
+		if GameState.map != null:
+			_autosave()
+
+func _view_state() -> Dictionary:
+	return {"cam_x": _camera.position.x, "cam_y": _camera.position.y, "zoom": _camera.zoom.x}
+
+func _apply_view(view: Dictionary) -> void:
+	_camera.frame_map(_map_view.map_bounds())   # set limits + make current
+	if view.has("zoom"):
+		_camera.zoom = Vector2(float(view["zoom"]), float(view["zoom"]))
+	if view.has("cam_x"):
+		_camera.position = Vector2(float(view["cam_x"]), float(view["cam_y"]))
 
 # Screen point -> map cell, via the active camera's canvas transform.
 func _cell_at(screen_position: Vector2) -> Vector2i:

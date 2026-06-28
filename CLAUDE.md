@@ -46,6 +46,6 @@ Caveats: `.h3m` is gzip-compressed on disk (specs describe the uncompressed stre
 
 ## Status
 
-Godot project scaffolded and playable. M1 (map render) and M2 (hero movement: A* pathfinding, tap-to-move, movement budget) are done; M3 part 1 (fog-of-war mechanic + luminous night lighting) is done — real sprites and autosave still pending. The Python asset pipeline is two-thirds built: `extract_lod` and `pcx_to_png` work and are verified; `def_to_atlas` is in progress. See `PLAN.md` for milestone detail and `README.md` for layout + how to run. Sibling `ypilot` (`C:\devel\aweussom\javascript\ypilot`) remains the reference for the glow/additive-blend look.
+Godot project scaffolded and playable. M1 (map render), M2 (hero movement), and M3 (the look + persistence) are done: fog-of-war, luminous night lighting, real HoMM3 terrain + a directional animated hero via the `AssetLibrary`/manifest layer, and autosave + instant resume (`SaveGame`). The Python asset pipeline is complete and verified: `extract_lod` → `pcx_to_png` / `def_to_atlas`, plus `build_terrain_assets` / `build_hero_assets`. Next is M4 (combat). See `PLAN.md` for milestone detail and `README.md` for layout + how to run. Sibling `ypilot` (`C:\devel\aweussom\javascript\ypilot`) remains the reference for the glow/additive-blend look.
 
 Engine: **Godot 4.7-stable, Compatibility renderer** → no reliable WorldEnvironment glow on Android, so the glow is **additive-blend + Light2D** (renderer-agnostic), not post-processing.

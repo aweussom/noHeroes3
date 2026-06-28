@@ -49,10 +49,10 @@ Principles that keep it reviewable:
   pans/zooms by touch. (Still on placeholder colours until `def_to_atlas` lands real terrain.)
 - **M2 — Move a hero.** ✅ Tap a tile → `Pathfinder` (A* over passability) → hero walks as far
   as movement points allow; End Turn refills. *Touch loop proven.*
-- **M3 — The look + persistence.** 🟡 *Part 1 done:* fog-of-war as a real mechanic (`FogModel`
-  HIDDEN/EXPLORED/VISIBLE + `FogView` veil) and luminous night lighting (`FogLayer`
-  CanvasModulate + a warm hero `Light2D`, additive token). *Still pending:* real HoMM3 sprites
-  (blocked on the asset pipeline) and autosave + instant resume.
+- **M3 — The look + persistence.** ✅ Fog-of-war as a real mechanic (`FogModel`
+  HIDDEN/EXPLORED/VISIBLE + `FogView` veil); luminous night lighting (`FogLayer` CanvasModulate +
+  a warm hero `Light2D`); real HoMM3 terrain + directional animated hero via `AssetLibrary`; and
+  autosave + instant resume (`SaveGame`, autosaves on move/turn/app-pause, resumes on launch).
 - **M4 — Combat.** ⬜ Enter a hex battle scene, deterministic AI opponent, resolve, return to map.
 
 ## Asset pipeline (Python, build-time)
