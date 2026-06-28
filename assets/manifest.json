@@ -1,4 +1,13 @@
 {
   "_comment": "Logical asset name -> res:// path. Filled in once tooling extracts art into assets/. Only this file is tracked; the art itself is gitignored.",
-  "example.hero.knight.idle": "res://assets/sprites/hero_knight_idle.png"
+  "terrain.dirt": "res://assets/terrain/dirt.png",
+  "terrain.grass": "res://assets/terrain/grass.png",
+  "terrain.lava": "res://assets/terrain/lava.png",
+  "terrain.rock": "res://assets/terrain/rock.png",
+  "terrain.rough": "res://assets/terrain/rough.png",
+  "terrain.sand": "res://assets/terrain/sand.png",
+  "terrain.snow": "res://assets/terrain/snow.png",
+  "terrain.subterranean": "res://assets/terrain/subterranean.png",
+  "terrain.swamp": "res://assets/terrain/swamp.png",
+  "terrain.water": "res://assets/terrain/water.png"
 }

@@ -15,6 +15,10 @@
 /assets/*
 !/assets/manifest.json
 
+# --- Python tooling cruft ---
+__pycache__/
+*.pyc
+
 # --- OS / editor cruft ---
 Thumbs.db
 .DS_Store

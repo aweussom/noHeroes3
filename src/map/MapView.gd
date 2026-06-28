@@ -2,10 +2,11 @@ class_name MapView
 extends Node2D
 ## Renders a MapModel onto a TileMapLayer (Godot 4.5: TileMapLayer, not the deprecated TileMap).
 ##
-## M1 uses PLACEHOLDER terrain: a runtime-built TileSet of solid colours, one source per terrain
-## id. The real HoMM3 terrain atlases drop in here later (built by the asset tooling and fetched
-## via AssetLibrary) — only _build_tileset() changes; the painting loop and the rest stay put.
-## Colours are deliberately dark/muted to suit luminous-on-black bedroom play.
+## Each terrain id becomes one TileSet source. The tile texture is the real extracted HoMM3
+## terrain tile (via AssetLibrary, built by tooling/build_terrain_assets.py) when present, and
+## falls back to a solid placeholder colour when it isn't — so the game still renders on a fresh
+## checkout before the gitignored assets/ folder has been generated. The painting loop is
+## texture-agnostic; only _terrain_texture() decides real-vs-placeholder.
 
 const TILE_SIZE := 32
 
@@ -22,6 +23,21 @@ var _terrain_colors := {
 	MapModel.LAVA:         Color("4a1f1a"),
 	MapModel.WATER:        Color("13283f"),
 	MapModel.ROCK:         Color("121215"),
+}
+
+# Terrain id -> AssetLibrary logical name (matches the keys build_terrain_assets.py writes).
+# A var, not const: cross-class const refs (MapModel.*) aren't constant expressions.
+var _terrain_assets := {
+	MapModel.DIRT:         "terrain.dirt",
+	MapModel.SAND:         "terrain.sand",
+	MapModel.GRASS:        "terrain.grass",
+	MapModel.SNOW:         "terrain.snow",
+	MapModel.SWAMP:        "terrain.swamp",
+	MapModel.ROUGH:        "terrain.rough",
+	MapModel.SUBTERRANEAN: "terrain.subterranean",
+	MapModel.LAVA:         "terrain.lava",
+	MapModel.WATER:        "terrain.water",
+	MapModel.ROCK:         "terrain.rock",
 }
 
 @export var terrain_layer: TileMapLayer
@@ -54,17 +70,27 @@ func map_bounds() -> Rect2:
 		return Rect2()
 	return Rect2(Vector2.ZERO, Vector2(_model.width, _model.height) * TILE_SIZE)
 
-# One TileSetAtlasSource per terrain colour, with the source id set to the terrain id so the
-# painting loop can pass a terrain id straight to set_cell().
+# One TileSetAtlasSource per terrain, with the source id set to the terrain id so the painting
+# loop can pass a terrain id straight to set_cell().
 func _build_tileset() -> TileSet:
 	var ts := TileSet.new()
 	ts.tile_size = Vector2i(TILE_SIZE, TILE_SIZE)
 	for terrain_id in _terrain_colors:
-		var img := Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
-		img.fill(_terrain_colors[terrain_id])
 		var src := TileSetAtlasSource.new()
-		src.texture = ImageTexture.create_from_image(img)
+		src.texture = _terrain_texture(terrain_id)
 		src.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
 		src.create_tile(Vector2i.ZERO)
 		ts.add_source(src, terrain_id)
 	return ts
+
+# The real extracted terrain tile when the pipeline has produced it; otherwise a solid
+# placeholder colour, so the map still renders before assets/ has been built.
+func _terrain_texture(terrain_id: int) -> Texture2D:
+	var logical: String = _terrain_assets.get(terrain_id, "")
+	if logical != "":
+		var tex := AssetLibrary.texture(logical)
+		if tex != null:
+			return tex
+	var img := Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
+	img.fill(_terrain_colors[terrain_id])
+	return ImageTexture.create_from_image(img)
