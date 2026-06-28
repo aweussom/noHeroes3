@@ -7,6 +7,7 @@ extends CanvasLayer
 ## End Turn button. TODO(M3): theme pass + resource/hero panels.
 
 signal end_turn_requested
+signal battle_requested   # M4 debug: start a test battle (no map monsters yet)
 
 const TEXT_COLOR := Color(0.85, 0.78, 0.55)   # warm, dim — readable at low brightness.
 
@@ -41,6 +42,12 @@ func _ready() -> void:
 	end_turn.custom_minimum_size = Vector2(240, 72)   # generous touch target
 	end_turn.pressed.connect(func() -> void: end_turn_requested.emit())
 	box.add_child(end_turn)
+
+	var battle := Button.new()
+	battle.text = "Battle (debug)"
+	battle.custom_minimum_size = Vector2(240, 56)
+	battle.pressed.connect(func() -> void: battle_requested.emit())
+	box.add_child(battle)
 
 func update_movement(current: int, maximum: int) -> void:
 	_movement_label.text = "Movement  %d / %d" % [current, maximum]

@@ -20,6 +20,7 @@ const HERO_MOVEMENT := 2000   # ~20 straight tiles per turn (HoMM3 cost units; s
 var _model: MapModel
 var _pathfinder: Pathfinder
 var _hero: Hero
+var _battle: BattleView   # the current battle, or null when on the adventure map
 
 func _ready() -> void:
 	# Camera gestures.
@@ -28,6 +29,7 @@ func _ready() -> void:
 	# Gameplay: tap to move, button to end the turn.
 	_touch.tapped.connect(_on_tapped)
 	_hud.end_turn_requested.connect(GameState.end_turn)
+	_hud.battle_requested.connect(_start_battle)
 	GameState.turn_changed.connect(_on_turn_changed)
 
 	if SaveGame.has_save():
@@ -136,6 +138,32 @@ func _reveal_along(steps: Array[Vector2i]) -> void:
 func _on_turn_changed(_player_index: int) -> void:
 	_update_hud()
 	_autosave()
+
+# M4.1 debug: stage a test battle. (Later this is triggered by walking into a map monster, with
+# the hero's real army.) The BattleView overlay covers and blocks the map until it finishes.
+func _start_battle() -> void:
+	if _battle != null:
+		return
+	var player_army := [
+		{"creature": Creature.make("griffin"), "count": 7},
+		{"creature": Creature.make("swordsman"), "count": 12},
+		{"creature": Creature.make("archer"), "count": 20},
+		{"creature": Creature.make("pikeman"), "count": 30},
+	]
+	var enemy_army := [
+		{"creature": Creature.make("wolf"), "count": 15},
+		{"creature": Creature.make("orc"), "count": 18},
+		{"creature": Creature.make("gnoll"), "count": 30},
+	]
+	_battle = BattleView.new()
+	add_child(_battle)
+	_battle.setup(BattleModel.new(player_army, enemy_army))
+	_battle.finished.connect(_end_battle)
+
+func _end_battle() -> void:
+	if _battle != null:
+		_battle.queue_free()
+		_battle = null
 
 func _update_hud() -> void:
 	if _hero != null:
