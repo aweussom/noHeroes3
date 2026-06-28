@@ -8,7 +8,7 @@ extends Node2D
 ## checkout before the gitignored assets/ folder has been generated. The painting loop is
 ## texture-agnostic; only _terrain_texture() decides real-vs-placeholder.
 
-const TILE_SIZE := 32
+const TILE_SIZE := 64   # HD Edition art is the x2 scale (64px tiles); see tooling/build_*_assets.py
 
 # Terrain id (MapModel.*) -> placeholder colour. Dark and low-glare on purpose.
 # A member var (not const): Color("hex") and cross-class const refs aren't constant expressions.

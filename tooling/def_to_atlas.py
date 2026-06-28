@@ -68,6 +68,12 @@ class Frame:
     image: Image.Image       # full_width x full_height, RGBA
     left_margin: int
     top_margin: int
+    name: str = ""           # the def's 13-byte frame name (e.g. "AH00_14.pcx") — used to cross-
+                             # reference the HD Edition's per-sprite naming (see build_hero_assets)
+    full_w: int = 0          # the frame's full (padded) canvas size and the decoded data size,
+    full_h: int = 0          # so callers can reconstruct exact placement at another scale
+    width: int = 0
+    height: int = 0
 
 
 def _build_palette(data: bytes) -> np.ndarray:
@@ -86,8 +92,8 @@ def _build_palette(data: bytes) -> np.ndarray:
     return palette
 
 
-def _decode_indices(data: bytes, frame_offset: int) -> tuple[np.ndarray, int, int]:
-    """Decode one frame's palette-index buffer. Returns (indices[fullH,fullW], leftM, topM)."""
+def _decode_indices(data: bytes, frame_offset: int) -> tuple:
+    """Decode one frame's palette-index buffer. Returns (indices[fullH,fullW], leftM, topM, fullW, fullH, w, h)."""
     size, fmt, full_w, full_h, w, h, left_m, top_m = _FRAME_HEADER.unpack_from(data, frame_offset)
     base = frame_offset + _FRAME_HEADER.size
 
@@ -159,7 +165,7 @@ def _decode_indices(data: bytes, frame_offset: int) -> tuple[np.ndarray, int, in
 
     full = np.zeros((full_h, full_w), np.uint8)
     full[top_m:top_m + h, left_m:left_m + w] = sub
-    return full, left_m, top_m
+    return full, left_m, top_m, full_w, full_h, w, h
 
 
 class DefFile:
@@ -174,11 +180,16 @@ class DefFile:
     def _read_block_table(self) -> dict[int, list[int]]:
         (block_count,) = struct.unpack_from("<I", self._data, 12)
         blocks: dict[int, list[int]] = {}
+        self.frame_names: dict[int, list[str]] = {}
         pos = _BLOCKS_AT
         for _ in range(block_count):
             block_id, frame_count = struct.unpack_from("<II", self._data, pos)
             pos += 4 + 4 + 8                        # block_id + frame_count + 8 unused
-            pos += 13 * frame_count                 # skip per-frame name strings
+            names = []
+            for _ in range(frame_count):            # 13-byte NUL-padded name per frame
+                names.append(self._data[pos:pos + 13].split(b"\x00", 1)[0].decode("ascii", "replace"))
+                pos += 13
+            self.frame_names[block_id] = names
             offsets = list(struct.unpack_from(f"<{frame_count}I", self._data, pos))
             pos += 4 * frame_count
             blocks[block_id] = offsets
@@ -188,10 +199,11 @@ class DefFile:
         out: list[Frame] = []
         for group in sorted(self.blocks):
             for index, offset in enumerate(self.blocks[group]):
-                indices, left_m, top_m = _decode_indices(self._data, offset)
+                indices, left_m, top_m, full_w, full_h, w, h = _decode_indices(self._data, offset)
                 rgba = self.palette[indices]
                 image = Image.fromarray(np.ascontiguousarray(rgba), "RGBA")
-                out.append(Frame(group, index, image, left_m, top_m))
+                out.append(Frame(group, index, image, left_m, top_m,
+                                 name=self.frame_names[group][index], full_w=full_w, full_h=full_h, width=w, height=h))
         return out
 
 

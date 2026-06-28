@@ -6,7 +6,8 @@ player** to play on an **Android tablet, in bed, at night**. Not a clone, not co
 drive the design (dark, silent, pausable-to-the-second) — live in [`CLAUDE.md`](./CLAUDE.md);
 the forward plan and milestones live in [`PLAN.md`](./PLAN.md).
 
-> **Assets are original HoMM III art**, extracted locally from an owned GOG copy. Legal only
+> **Assets are original HoMM III art** (the **HD Edition** look), extracted locally from owned
+> copies — HD pixels from the Steam HD `.pak`, sprite geometry from the GOG `.lod`. Legal only
 > because this is purely personal and never published. The extracted art is gitignored
 > (`assets/`) and the game references it through a swappable manifest, never by hard path — so
 > the art can be replaced without touching code if distribution is ever wanted.
@@ -51,23 +52,28 @@ Godot 4.7-stable (Standard build) lives at `C:\devel\godot\Godot_v4.7-stable_win
 
 ## Asset pipeline
 
-Original art lives in the GOG **Complete** install's `Data/*.lod` archives. Three stages turn it
-into PNGs Godot can load (all stdlib + Pillow/numpy; run with the system `python`):
+The game uses the **HD Edition** look: HD pixels from the Steam HD `.pak` archives, with sprite
+geometry (group/frame layout, margins) from the classic GOG `.lod`/`.def`. To (re)generate the
+in-game assets — needs both installs, plus Pillow/numpy:
 
 ```sh
+# regenerate everything the game loads (writes assets/ + manifest.json)
+python tooling/build_terrain_assets.py     # cleanest 64px fill tile per terrain (HD pak)
+python tooling/build_hero_assets.py        # HD hero pixels + classic layout -> directional atlas
+```
+
+Underlying tools (run directly to inspect/extract):
+
+```sh
+HD="C:/Program Files (x86)/Steam/steamapps/common/Heroes of Might & Magic III - HD Edition/data"
 LOD="C:/Program Files (x86)/GOG Galaxy/Games/HoMM 3 Complete/Data"
 
-# 1. inspect / extract raw members from a .lod archive
-python tooling/extract_lod.py "$LOD/H3bitmap.lod" --list
-python tooling/extract_lod.py "$LOD/H3sprite.lod" --out _extracted --filter .def
-
-# 2. still images: .pcx → PNG (reads a .lod member directly, or a loose .pcx)
-python tooling/pcx_to_png.py "$LOD/H3bitmap.lod" --name GamSelBk.pcx --out-dir _out
-
-# 3. animated sprites: .def → PNG atlas + frame JSON  (terrain tiles, heroes, creatures)
+python tooling/pak_to_atlas.py "$HD/sprite_DXT_com_x2.pak" --list          # HD .pak: entries
+python tooling/pak_to_atlas.py "$HD/sprite_DXT_com_x2.pak" --extract AH00_ --out-dir _out
+python tooling/extract_lod.py  "$LOD/H3sprite.lod" --list                   # classic .lod members
 python tooling/def_to_atlas.py "$LOD/H3sprite.lod" --name GRASTL.def --out-dir _out
+python tooling/pcx_to_png.py   "$LOD/H3bitmap.lod" --name GamSelBk.pcx --out-dir _out
 ```
 
 Format authority order when references disagree: **VCMI** > **HeroWO/h3m2json** >
 `h3m_description` spec (see [`reference/README.md`](./reference/README.md)).
-```

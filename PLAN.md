@@ -45,8 +45,8 @@ Principles that keep it reviewable:
 ## Milestones (each leaves the game runnable + independently reviewable)
 
 - **M0 — Scaffold.** ✅ `project.godot`, folder tree, stubbed GDScript with interfaces.
-- **M1 — Map on screen.** ✅ `MapModel` → `MapView` renders placeholder terrain; camera
-  pans/zooms by touch. (Still on placeholder colours until `def_to_atlas` lands real terrain.)
+- **M1 — Map on screen.** ✅ `MapModel` → `MapView` renders real HD terrain tiles (placeholder
+  colours remain as the fallback when `assets/` isn't built); camera pans/zooms by touch.
 - **M2 — Move a hero.** ✅ Tap a tile → `Pathfinder` (A* over passability) → hero walks as far
   as movement points allow; End Turn refills. *Touch loop proven.*
 - **M3 — The look + persistence.** ✅ Fog-of-war as a real mechanic (`FogModel`
@@ -57,15 +57,16 @@ Principles that keep it reviewable:
 
 ## Asset pipeline (Python, build-time)
 
-`extract_lod.py` (GOG `.lod` → members) → `pcx_to_png.py` (`.pcx` stills → PNG) and
-`def_to_atlas.py` (`.def` → PNG atlas + frame JSON) → drop into `assets/` and register in
-`manifest.json`. Source: the **GOG Complete (RoE+AB+SoD)** install at
-`C:\Program Files (x86)\GOG Galaxy\Games\HoMM 3 Complete\Data` — *not* the Steam HD Edition.
-Output is the swappable layer; kept out of any future distribution.
+The game uses the **HD Edition** look (64px tiles, x2 art). Two sources feed `assets/` +
+`manifest.json` (the swappable layer; kept out of any future distribution):
+- **HD pixels** — `pak_to_atlas.py` unpacks the Steam HD `.pak` (DXT/DDS): zlib-inflate → Pillow
+  DDS decode → crop sprite (rotating `rot=1` 90° CW).
+- **Classic geometry** — `extract_lod.py` + `def_to_atlas.py` (GOG `.lod`/`.def`; supplies the
+  per-frame group/margin layout the HD pak drops) + `pcx_to_png.py` for stills.
 
-Status: **stage 1 `extract_lod` ✅** (verified on H3sprite/H3bitmap), **stage 2 `pcx_to_png` ✅**
-(verified end-to-end), **stage 3 `def_to_atlas` 🟡** in progress. First real target: terrain
-tilesets to replace `MapView`'s placeholder colours.
+Per-game builders compose them: `build_terrain_assets.py` (cleanest 64px fill tile per terrain)
+and `build_hero_assets.py` (HD pixels + classic layout → directional atlas). All ✅ and verified
+in-game; both the Steam HD and GOG Complete installs are required to (re)build.
 
 ## Map pipeline (Python, build-time)
 
