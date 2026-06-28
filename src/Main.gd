@@ -157,7 +157,7 @@ func _start_battle() -> void:
 	]
 	_battle = BattleView.new()
 	add_child(_battle)
-	_battle.setup(BattleModel.new(player_army, enemy_army))
+	_battle.setup(BattleModel.new(player_army, enemy_army, GameState.rng))   # seeded -> reproducible
 	_battle.finished.connect(_end_battle)
 
 func _end_battle() -> void:

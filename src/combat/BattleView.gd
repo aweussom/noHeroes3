@@ -78,7 +78,41 @@ func _on_field_input(event: InputEvent) -> void:
 	if stack == null or stack.side != 0:
 		return   # not the player's turn
 	var hex := _field.hex_at(event.position - _field.position)
-	if hex in _reachable:
+	var target := _model.stack_at(hex)
+	if target != null and target.side != stack.side:
+		_try_attack(stack, target)
+	elif hex in _reachable:
 		stack.hex = hex
-		_model.advance_turn()
-		_begin_turn()
+		_end_turn()
+
+func _end_turn() -> void:
+	_model.advance_turn()
+	_begin_turn()
+
+# Attack a target: shoot if ranged and clear of melee; otherwise close to an adjacent hex (if
+# reachable) and strike, taking one retaliation if the defender survives.
+func _try_attack(attacker: CreatureStack, target: CreatureStack) -> void:
+	if attacker.is_ranged() and attacker.shots_left > 0 and not _model.has_adjacent_enemy(attacker):
+		attacker.shots_left -= 1
+		_model.deal_damage(attacker, target)
+		_end_turn()
+		return
+
+	if not _model.neighbors(attacker.hex).has(target.hex):
+		var spot := _reachable_adjacent_to(target)
+		if spot.x < 0:
+			return   # can't reach the target this turn
+		attacker.hex = spot
+
+	_model.deal_damage(attacker, target)
+	if target.is_alive() and not target.retaliated:
+		target.retaliated = true
+		_model.deal_damage(target, attacker)
+	_end_turn()
+
+# A reachable empty hex next to the target, or (-1, -1) if none.
+func _reachable_adjacent_to(target: CreatureStack) -> Vector2i:
+	for n in _model.neighbors(target.hex):
+		if n in _reachable:
+			return n
+	return Vector2i(-1, -1)

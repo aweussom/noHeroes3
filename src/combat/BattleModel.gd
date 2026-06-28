@@ -15,9 +15,14 @@ var stacks: Array[CreatureStack] = []
 var turn_order: Array[CreatureStack] = []
 var _turn_index := 0
 
+# Damage RNG, injected so battles stay reproducible (the game passes GameState.rng) and this pure
+# class never reaches into an autoload — keeps it unit-testable in isolation.
+var _rng: RandomNumberGenerator
+
 ## Build a battle from two armies, each an Array of { "creature": Creature, "count": int }.
 ## Player deploys down the left column, enemy down the right — HoMM3's starting layout.
-func _init(player_army: Array, enemy_army: Array) -> void:
+func _init(player_army: Array, enemy_army: Array, rng: RandomNumberGenerator = null) -> void:
+	_rng = rng if rng != null else RandomNumberGenerator.new()
 	_deploy(player_army, 0, 0)
 	_deploy(enemy_army, 1, COLS - 1)
 	_start_round()
@@ -47,6 +52,8 @@ func living(side: int) -> Array[CreatureStack]:
 # Rebuild the round's order: fastest first, ties broken deterministically (player before enemy,
 # then top-to-bottom) so the seeded game stays reproducible.
 func _start_round() -> void:
+	for s in stacks:
+		s.retaliated = false
 	turn_order = stacks.filter(func(s: CreatureStack) -> bool: return s.is_alive())
 	turn_order.sort_custom(func(a: CreatureStack, b: CreatureStack) -> bool:
 		if a.creature.speed != b.creature.speed:
@@ -102,3 +109,39 @@ func reachable_hexes(stack: CreatureStack) -> Array[Vector2i]:
 			result.append(n)
 			queue.append(n)
 	return result
+
+# --- Attacks ---
+
+## Is any enemy stack on a hex adjacent to this one? (A ranged stack in melee can't shoot.)
+func has_adjacent_enemy(stack: CreatureStack) -> bool:
+	for n in neighbors(stack.hex):
+		var other := stack_at(n)
+		if other != null and other.side != stack.side:
+			return true
+	return false
+
+## Resolve `attacker` hitting `defender`: roll damage (HoMM3 formula, seeded RNG so battles are
+## reproducible), apply casualties, and return the damage dealt. Retaliation is the caller's job.
+func deal_damage(attacker: CreatureStack, defender: CreatureStack) -> int:
+	var base := 0
+	for _i in attacker.count:
+		base += _rng.randi_range(attacker.creature.min_damage, attacker.creature.max_damage)
+
+	# +5% per attack point over defense (cap +300%); -2.5% per defense point over attack (cap -70%).
+	var diff := attacker.creature.attack - defender.creature.defense
+	var mult: float = 1.0 + 0.05 * min(diff, 60) if diff >= 0 else 1.0 - 0.025 * min(-diff, 28)
+
+	var damage := int(round(base * mult))
+	_apply_casualties(defender, damage)
+	return damage
+
+# Subtract damage from a stack's total HP, killing whole creatures off the top and leaving the
+# front creature partially wounded (top_hp).
+func _apply_casualties(stack: CreatureStack, damage: int) -> void:
+	var total := (stack.count - 1) * stack.creature.hp + stack.top_hp - damage
+	if total <= 0:
+		stack.count = 0
+		stack.top_hp = 0
+	else:
+		stack.count = int(ceil(float(total) / stack.creature.hp))
+		stack.top_hp = total - (stack.count - 1) * stack.creature.hp
