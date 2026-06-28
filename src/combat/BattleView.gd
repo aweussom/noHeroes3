@@ -11,7 +11,9 @@ signal finished
 
 const BG_COLOR := Color(0.03, 0.04, 0.06, 1.0)
 
+var _model: BattleModel
 var _field: BattleField
+var _reachable: Array[Vector2i] = []
 
 func _ready() -> void:
 	layer = 20   # above the adventure map and its HUD
@@ -20,25 +22,63 @@ func _ready() -> void:
 	bg.color = BG_COLOR
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_STOP   # eat taps so they don't reach the map underneath
+	bg.gui_input.connect(_on_field_input)
 	add_child(bg)
 
 	_field = BattleField.new()
 	add_child(_field)
 
-	var leave := Button.new()
-	leave.text = "End Battle"
-	leave.custom_minimum_size = Vector2(200, 64)
-	leave.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	leave.offset_left = -220
-	leave.offset_top = -84
-	leave.offset_right = -20
-	leave.offset_bottom = -20
-	leave.pressed.connect(func() -> void: finished.emit())
-	add_child(leave)
+	_add_button("Skip", -84, func() -> void: _skip())
+	_add_button("End Battle", -20, func() -> void: finished.emit())
 
-## Show a battle and centre it on screen.
+func _add_button(text: String, bottom_offset: float, on_press: Callable) -> void:
+	var b := Button.new()
+	b.text = text
+	b.custom_minimum_size = Vector2(200, 56)
+	b.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	b.offset_left = -220
+	b.offset_top = bottom_offset - 56
+	b.offset_right = -20
+	b.offset_bottom = bottom_offset
+	b.pressed.connect(on_press)
+	add_child(b)
+
+## Show a battle and centre it on screen, then start the first turn.
 func setup(model: BattleModel) -> void:
+	_model = model
 	_field.set_model(model)
 	var field_size := _field.pixel_size()
 	var view_size := get_viewport().get_visible_rect().size
 	_field.position = (view_size - field_size) * 0.5
+	_begin_turn()
+
+# Advance to the next stack the player controls, auto-passing enemy turns (placeholder for the
+# M4.4 AI), then highlight it and its movement range.
+func _begin_turn() -> void:
+	var guard := 0
+	while _model.active_stack() != null and _model.active_stack().side == 1 and guard < 1000:
+		_model.advance_turn()
+		guard += 1
+	var stack := _model.active_stack()
+	_reachable = _model.reachable_hexes(stack) if stack != null else []
+	_field.set_highlights(stack, _reachable)
+
+func _skip() -> void:
+	var stack := _model.active_stack()
+	if stack != null and stack.side == 0:
+		_model.advance_turn()
+		_begin_turn()
+
+func _on_field_input(event: InputEvent) -> void:
+	var tapped: bool = (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT) \
+		or (event is InputEventScreenTouch and event.pressed)
+	if not tapped:
+		return
+	var stack := _model.active_stack()
+	if stack == null or stack.side != 0:
+		return   # not the player's turn
+	var hex := _field.hex_at(event.position - _field.position)
+	if hex in _reachable:
+		stack.hex = hex
+		_model.advance_turn()
+		_begin_turn()
