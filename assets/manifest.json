@@ -1,5 +1,7 @@
 {
   "_comment": "Logical asset name -> res:// path. Filled in once tooling extracts art into assets/. Only this file is tracked; the art itself is gitignored.",
+  "hero.knight.atlas": "res://assets/sprites/hero_knight.png",
+  "hero.knight.frames": "res://assets/sprites/hero_knight.json",
   "terrain.dirt": "res://assets/terrain/dirt.png",
   "terrain.grass": "res://assets/terrain/grass.png",
   "terrain.lava": "res://assets/terrain/lava.png",
