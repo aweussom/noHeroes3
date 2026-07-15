@@ -120,6 +120,30 @@ func reachable_hexes(stack: CreatureStack) -> Array[Vector2i]:
 			queue.append(n)
 	return result
 
+## The hex-by-hex walking route from a stack's hex to a reachable hex, both ends included — the
+## same BFS as reachable_hexes with parents kept, so the route always exists for hexes it returned.
+## Used to animate movement; call BEFORE mutating stack.hex. Empty if `to` isn't reachable.
+func path_to(stack: CreatureStack, to: Vector2i) -> Array[Vector2i]:
+	var parent := {stack.hex: stack.hex}
+	var dist := {stack.hex: 0}
+	var queue: Array[Vector2i] = [stack.hex]
+	while not queue.is_empty():
+		var hex: Vector2i = queue.pop_front()
+		if dist[hex] >= stack.creature.speed:
+			continue
+		for n in neighbors(hex):
+			if parent.has(n) or stack_at(n) != null:
+				continue
+			parent[n] = hex
+			dist[n] = dist[hex] + 1
+			queue.append(n)
+	if not parent.has(to):
+		return []
+	var path: Array[Vector2i] = [to]
+	while path[0] != stack.hex:
+		path.push_front(parent[path[0]])
+	return path
+
 ## Steps between two hexes as the crow flies (ignoring blockers) — offset coords converted to
 ## cube coords, where hex distance is half the coordinate-difference sum (the standard trick).
 func hex_distance(a: Vector2i, b: Vector2i) -> int:
@@ -144,16 +168,29 @@ func can_shoot(stack: CreatureStack) -> bool:
 	return stack.is_ranged() and stack.shots_left > 0 and not has_adjacent_enemy(stack)
 
 ## A ranged attack: spends a shot, defender never retaliates. Caller checks can_shoot() first.
-func shoot(attacker: CreatureStack, defender: CreatureStack) -> void:
+## Returns the resolved events for BattleAnimator to play back (state is already final).
+func shoot(attacker: CreatureStack, defender: CreatureStack) -> Array[Dictionary]:
 	attacker.shots_left -= 1
-	deal_damage(attacker, defender)
+	return [_strike_event("shot", attacker, defender)]
 
 ## A melee strike on an adjacent enemy: the defender hits back once per round if it survives.
-func melee(attacker: CreatureStack, defender: CreatureStack) -> void:
-	deal_damage(attacker, defender)
+## Returns the resolved events (strike + possible retaliation) for BattleAnimator.
+func melee(attacker: CreatureStack, defender: CreatureStack) -> Array[Dictionary]:
+	var events: Array[Dictionary] = [_strike_event("melee", attacker, defender)]
 	if defender.is_alive() and not defender.retaliated:
 		defender.retaliated = true
-		deal_damage(defender, attacker)
+		events.append(_strike_event("melee", defender, attacker))
+	return events
+
+# Resolve one hit and describe it: what happened, to whom, and how badly — everything the
+# animation needs after the fact (the model never waits for the view).
+func _strike_event(kind: String, attacker: CreatureStack, defender: CreatureStack) -> Dictionary:
+	var before := defender.count
+	var damage := deal_damage(attacker, defender)
+	return {
+		"kind": kind, "attacker": attacker, "defender": defender,
+		"damage": damage, "killed": before - defender.count, "died": not defender.is_alive(),
+	}
 
 ## Resolve `attacker` hitting `defender`: roll damage (HoMM3 formula, seeded RNG so battles are
 ## reproducible), apply casualties, and return the damage dealt. Retaliation is the caller's job.

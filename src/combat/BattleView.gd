@@ -16,6 +16,8 @@ const AI_STEP_DELAY := 0.4   # seconds before each enemy action — a calm, foll
 var _model: BattleModel
 var _field: BattleField
 var _ai := BattleAI.new()
+var _animator: BattleAnimator
+var _animating := false   # events are playing back — ignore taps until they finish
 var _reachable: Array[Vector2i] = []
 var _outcome: Label   # victory/defeat banner, created once the battle is decided
 
@@ -32,6 +34,8 @@ func _ready() -> void:
 
 	_field = BattleField.new()
 	add_child(_field)
+	_animator = BattleAnimator.new(_field)
+	add_child(_animator)
 
 	_add_button("Skip", -84, func() -> void: _skip())
 	_add_button("End Battle", -20, func() -> void: finished.emit())
@@ -90,13 +94,17 @@ func _begin_turn() -> void:
 		await get_tree().create_timer(AI_STEP_DELAY).timeout
 		if not is_inside_tree():
 			return   # battle was closed while we waited
-		_ai.take_turn(_model, stack)
+		await _play(_ai.take_turn(_model, stack))
+		if not is_inside_tree():
+			return
 		_end_turn()
 		return
 	_reachable = _model.reachable_hexes(stack)
 	_field.set_highlights(stack, _reachable)
 
 func _skip() -> void:
+	if _animating:
+		return
 	var stack := _model.active_stack()
 	if stack != null and stack.side == 0:
 		_model.advance_turn()
@@ -105,39 +113,61 @@ func _skip() -> void:
 func _on_field_input(event: InputEvent) -> void:
 	var tapped: bool = (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT) \
 		or (event is InputEventScreenTouch and event.pressed)
-	if not tapped or _model.winner() != -1:
+	if not tapped or _animating or _model.winner() != -1:
 		return
 	var stack := _model.active_stack()
 	if stack == null or stack.side != 0:
 		return   # not the player's turn
-	var hex := _field.hex_at(event.position - _field.position)
-	var target := _model.stack_at(hex)
+
+	# What was tapped? The creatures themselves first (they stand tall over the grid — hex-only
+	# hit-testing sent taps on an enemy's body to the empty hex behind its head), then the grid.
+	var local: Vector2 = event.position - _field.position
+	var target := _field.stack_at_point(local)
+	var hex := target.hex if target != null else _field.hex_at(local)
+	if target == null:
+		target = _model.stack_at(hex)
+
 	if target != null and target.side != stack.side:
 		_try_attack(stack, target)
-	elif hex in _reachable:
-		stack.hex = hex
-		_end_turn()
+	elif target == null and hex in _reachable:
+		_move_to(stack, hex)
 
 func _end_turn() -> void:
 	_model.advance_turn()
 	_begin_turn()
 
+# Walk the active stack to a reachable hex (route captured before the model moves it).
+func _move_to(stack: CreatureStack, hex: Vector2i) -> void:
+	var path := _model.path_to(stack, hex)
+	stack.hex = hex
+	await _play([{"kind": "move", "stack": stack, "path": path}])
+	_end_turn()
+
 # Attack a target: shoot if ranged and clear of melee; otherwise close to an adjacent hex (if
 # reachable) and strike. Shot/retaliation rules live in BattleModel, shared with BattleAI.
 func _try_attack(attacker: CreatureStack, target: CreatureStack) -> void:
+	var events: Array[Dictionary] = []
 	if _model.can_shoot(attacker):
-		_model.shoot(attacker, target)
-		_end_turn()
-		return
-
-	if not _model.neighbors(attacker.hex).has(target.hex):
-		var spot := _reachable_adjacent_to(target)
-		if spot.x < 0:
-			return   # can't reach the target this turn
-		attacker.hex = spot
-
-	_model.melee(attacker, target)
+		events = _model.shoot(attacker, target)
+	else:
+		if not _model.neighbors(attacker.hex).has(target.hex):
+			var spot := _reachable_adjacent_to(target)
+			if spot.x < 0:
+				return   # can't reach the target this turn
+			var path := _model.path_to(attacker, spot)
+			attacker.hex = spot
+			events.append({"kind": "move", "stack": attacker, "path": path})
+		events.append_array(_model.melee(attacker, target))
+	await _play(events)
 	_end_turn()
+
+# Play resolved events as animations, blocking input meanwhile. The model state is already final
+# when this starts, so quitting the battle mid-playback is always safe.
+func _play(events: Array[Dictionary]) -> void:
+	_animating = true
+	_field.set_highlights(_field.active, [])   # the old movement range is stale during playback
+	await _animator.play(events)
+	_animating = false
 
 # The battle is decided: clear the highlights and announce it, dim and centred near the top.
 # The End Battle button (always on screen) is the way out.

@@ -70,6 +70,12 @@ Principles that keep it reviewable:
     `tooling/build_battle_assets.py`, anchored to the classic ground line) and the grass
     battlefield background, night-dimmed. Enemy side mirrored, HoMM3 count badges, spread
     deployment. Placeholder tokens remain the fresh-checkout fallback.
+  - ✅ **M4.6** — battle animations + tap-targeting fix. Model actions return resolved event
+    lists; `BattleAnimator` plays them back after the fact (walks along the route, melee swings,
+    shots with a luminous tracer, hit flinches, death animations with a fade, floating damage
+    numbers — every hit visible, per silent-first). Tap hit-testing now tests the creature
+    sprites first, not just the hex grid — sprites stand 2 hexes tall, so grid-only testing sent
+    taps on an enemy's body to the empty hex behind it (ranged attacks felt broken).
   - ⬜ The battle result applied to the hero's actual army; battles triggered by walking into
     map monsters instead of the debug button.
   - ⬜ **Battle state in the autosave.** The core drop-and-resume promise must hold mid-battle

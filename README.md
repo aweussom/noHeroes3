@@ -21,10 +21,11 @@ the forward plan and milestones live in [`PLAN.md`](./PLAN.md).
 | **M3** — the look + persistence (fog-of-war, night lighting, real art, autosave/resume) | ✅ done |
 | **M4** — combat (hex battlefield, turn order, movement, attacks/damage/retaliation) | 🟡 in progress |
 
-M4 so far (M4.1–M4.5): a battle runs end-to-end against a deterministic AI opponent — real HD
-creature sprites on a night-dimmed HoMM3 battlefield — entered via a debug HUD button with test
-armies. Still to come: the result applied back to the map, battles triggered by map monsters,
-and battle state in the autosave — see [`PLAN.md`](./PLAN.md).
+M4 so far (M4.1–M4.6): a battle runs end-to-end against a deterministic AI opponent — real HD
+creature sprites, fully animated (walks, attacks, shots, deaths, floating damage), on a
+night-dimmed HoMM3 battlefield — entered via a debug HUD button with test armies. Still to come:
+the result applied back to the map, battles triggered by map monsters, and battle state in the
+autosave — see [`PLAN.md`](./PLAN.md).
 
 **Asset pipeline (Python, build-time):** ✅ complete and verified in-game (HD `.pak` pixels +
 classic `.lod`/`.def` geometry — see below).

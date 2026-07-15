@@ -16,23 +16,21 @@ extends RefCounted
 ## count) — neutralize what hurts most first.
 
 ## Play out the acting stack's whole turn on the model (move and/or attack, or pass if boxed in).
-## The caller advances the turn afterwards.
-func take_turn(model: BattleModel, stack: CreatureStack) -> void:
+## Returns the resolved events for BattleAnimator to play back; the caller advances the turn.
+func take_turn(model: BattleModel, stack: CreatureStack) -> Array[Dictionary]:
 	var enemies := model.living(1 - stack.side)
 	if enemies.is_empty():
-		return   # battle is over; nothing to do
+		return []   # battle is over; nothing to do
 
 	# 1. Clear shot: pick off the biggest threat from range.
 	if model.can_shoot(stack):
-		model.shoot(stack, _biggest_threat(enemies))
-		return
+		return model.shoot(stack, _biggest_threat(enemies))
 
 	# 2. Already in melee: strike the biggest adjacent threat.
 	var adjacent := enemies.filter(
 		func(e: CreatureStack) -> bool: return model.neighbors(stack.hex).has(e.hex))
 	if not adjacent.is_empty():
-		model.melee(stack, _biggest_threat(adjacent))
-		return
+		return model.melee(stack, _biggest_threat(adjacent))
 
 	# 3. Charge: of the enemies with a free reachable hex beside them, go for the biggest threat.
 	var reachable := model.reachable_hexes(stack)
@@ -40,14 +38,22 @@ func take_turn(model: BattleModel, stack: CreatureStack) -> void:
 		func(e: CreatureStack) -> bool: return _charge_hex(model, reachable, e, stack.hex).x >= 0)
 	if not in_range.is_empty():
 		var target := _biggest_threat(in_range)
-		stack.hex = _charge_hex(model, reachable, target, stack.hex)
-		model.melee(stack, target)
-		return
+		var events := _move_events(model, stack, _charge_hex(model, reachable, target, stack.hex))
+		events.append_array(model.melee(stack, target))
+		return events
 
 	# 4. Nobody reachable: advance toward the nearest enemy. (Boxed in entirely -> pass.)
 	var advance := _step_toward_enemies(model, reachable, enemies)
 	if advance.x >= 0:
-		stack.hex = advance
+		return _move_events(model, stack, advance)
+	return []
+
+# Walk the stack to a reachable hex: capture the route first (path_to needs the old position),
+# then mutate. One "move" event carries the whole route.
+func _move_events(model: BattleModel, stack: CreatureStack, to: Vector2i) -> Array[Dictionary]:
+	var path := model.path_to(stack, to)
+	stack.hex = to
+	return [{"kind": "move", "stack": stack, "path": path}]
 
 # The enemy stack expected to deal the most damage per attack; ties go to the topmost-then-leftmost
 # hex so the choice is deterministic.
