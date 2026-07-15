@@ -28,12 +28,30 @@ func _ready() -> void:
 	bg.mouse_filter = Control.MOUSE_FILTER_STOP   # eat taps so they don't reach the map underneath
 	bg.gui_input.connect(_on_field_input)
 	add_child(bg)
+	_add_background()
 
 	_field = BattleField.new()
 	add_child(_field)
 
 	_add_button("Skip", -84, func() -> void: _skip())
 	_add_button("End Battle", -20, func() -> void: finished.emit())
+
+# The real HoMM3 battlefield behind the hex grid, when the asset pipeline has built it (fresh
+# checkouts just keep the dark ColorRect). The art is bright daylight; this CanvasLayer sits
+# outside the world canvas (no CanvasModulate), so we dim it here with a cool modulate to keep
+# the dark-room look. IGNORE mouse so taps still land on the input-eating ColorRect below.
+func _add_background() -> void:
+	var tex := AssetLibrary.texture("battle.background.grass")
+	if tex == null:
+		return
+	var rect := TextureRect.new()
+	rect.texture = tex
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	rect.modulate = Color(0.38, 0.42, 0.56)   # night-dim, faintly cool — matches the map's mood
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(rect)
 
 func _add_button(text: String, bottom_offset: float, on_press: Callable) -> void:
 	var b := Button.new()

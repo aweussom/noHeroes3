@@ -28,10 +28,12 @@ func _init(player_army: Array, enemy_army: Array, rng: RandomNumberGenerator = n
 	_start_round()
 
 func _deploy(army: Array, side: int, col: int) -> void:
-	var start_row := (ROWS - army.size()) / 2   # vertically centred column of stacks
 	for i in army.size():
+		# Spread the stacks evenly down the column (HoMM3 does the same) — creature sprites are
+		# taller than a hex, so adjacent rows would overlap badly.
+		var row := roundi((i + 0.5) * ROWS / army.size() - 0.5)
 		var unit: Dictionary = army[i]
-		stacks.append(CreatureStack.new(unit["creature"], int(unit["count"]), side, Vector2i(col, start_row + i)))
+		stacks.append(CreatureStack.new(unit["creature"], int(unit["count"]), side, Vector2i(col, row)))
 
 func in_bounds(hex: Vector2i) -> bool:
 	return hex.x >= 0 and hex.x < COLS and hex.y >= 0 and hex.y < ROWS

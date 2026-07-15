@@ -66,8 +66,10 @@ Principles that keep it reviewable:
     strike/charge in melee, otherwise advance — deterministic tie-breaks throughout, verified
     headless (same seed → identical battle twice). Includes minimal victory detection
     (`BattleModel.winner()`) + a Victory/Defeat banner.
-  - ⬜ **M4.5** — real battlefield + creature sprites via `AssetLibrary` (luminous placeholder
-    tokens today).
+  - ✅ **M4.5** — real battle art: HD creature idle sprites (classic-def geometry + HD pixels,
+    `tooling/build_battle_assets.py`, anchored to the classic ground line) and the grass
+    battlefield background, night-dimmed. Enemy side mirrored, HoMM3 count badges, spread
+    deployment. Placeholder tokens remain the fresh-checkout fallback.
   - ⬜ The battle result applied to the hero's actual army; battles triggered by walking into
     map monsters instead of the debug button.
   - ⬜ **Battle state in the autosave.** The core drop-and-resume promise must hold mid-battle
@@ -83,8 +85,9 @@ The game uses the **HD Edition** look (64px tiles, x2 art). Two sources feed `as
 - **Classic geometry** — `extract_lod.py` + `def_to_atlas.py` (GOG `.lod`/`.def`; supplies the
   per-frame group/margin layout the HD pak drops) + `pcx_to_png.py` for stills.
 
-Per-game builders compose them: `build_terrain_assets.py` (cleanest 64px fill tile per terrain)
-and `build_hero_assets.py` (HD pixels + classic layout → directional atlas). All ✅ and verified
+Per-game builders compose them: `build_terrain_assets.py` (cleanest 64px fill tile per terrain),
+`build_hero_assets.py` (HD pixels + classic layout → directional atlas) and
+`build_battle_assets.py` (creature idle atlases + battlefield background). All ✅ and verified
 in-game; both the Steam HD and GOG Complete installs are required to (re)build.
 
 ## Map pipeline (Python, build-time)

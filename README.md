@@ -21,10 +21,10 @@ the forward plan and milestones live in [`PLAN.md`](./PLAN.md).
 | **M3** — the look + persistence (fog-of-war, night lighting, real art, autosave/resume) | ✅ done |
 | **M4** — combat (hex battlefield, turn order, movement, attacks/damage/retaliation) | 🟡 in progress |
 
-M4 so far (M4.1–M4.4): a battle runs end-to-end against a deterministic AI opponent, entered via
-a debug HUD button with test armies. Still to come: the result applied back to the map, battles
-triggered by map monsters, battle art, and battle state in the autosave — see
-[`PLAN.md`](./PLAN.md).
+M4 so far (M4.1–M4.5): a battle runs end-to-end against a deterministic AI opponent — real HD
+creature sprites on a night-dimmed HoMM3 battlefield — entered via a debug HUD button with test
+armies. Still to come: the result applied back to the map, battles triggered by map monsters,
+and battle state in the autosave — see [`PLAN.md`](./PLAN.md).
 
 **Asset pipeline (Python, build-time):** ✅ complete and verified in-game (HD `.pak` pixels +
 classic `.lod`/`.def` geometry — see below).
@@ -66,6 +66,7 @@ in-game assets — needs both installs, plus Pillow/numpy:
 # regenerate everything the game loads (writes assets/ + manifest.json)
 python tooling/build_terrain_assets.py     # cleanest 64px fill tile per terrain (HD pak)
 python tooling/build_hero_assets.py        # HD hero pixels + classic layout -> directional atlas
+python tooling/build_battle_assets.py      # creature idle atlases + battlefield background
 ```
 
 Underlying tools (run directly to inspect/extract):
