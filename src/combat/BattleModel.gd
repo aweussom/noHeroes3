@@ -47,6 +47,14 @@ func stack_at(hex: Vector2i) -> CreatureStack:
 func living(side: int) -> Array[CreatureStack]:
 	return stacks.filter(func(s: CreatureStack) -> bool: return s.is_alive() and s.side == side)
 
+## The winning side (0/1) once the other side is wiped out, or -1 while both still stand.
+func winner() -> int:
+	if living(1).is_empty():
+		return 0
+	if living(0).is_empty():
+		return 1
+	return -1
+
 # --- Turn order ---
 
 # Rebuild the round's order: fastest first, ties broken deterministically (player before enemy,
@@ -110,6 +118,15 @@ func reachable_hexes(stack: CreatureStack) -> Array[Vector2i]:
 			queue.append(n)
 	return result
 
+## Steps between two hexes as the crow flies (ignoring blockers) — offset coords converted to
+## cube coords, where hex distance is half the coordinate-difference sum (the standard trick).
+func hex_distance(a: Vector2i, b: Vector2i) -> int:
+	var ax := a.x - (a.y - (a.y & 1)) / 2
+	var bx := b.x - (b.y - (b.y & 1)) / 2
+	var dx := bx - ax
+	var dy := b.y - a.y
+	return (absi(dx) + absi(dy) + absi(dx + dy)) / 2
+
 # --- Attacks ---
 
 ## Is any enemy stack on a hex adjacent to this one? (A ranged stack in melee can't shoot.)
@@ -119,6 +136,22 @@ func has_adjacent_enemy(stack: CreatureStack) -> bool:
 		if other != null and other.side != stack.side:
 			return true
 	return false
+
+## May this stack shoot right now? Ranged, ammo left, and not pinned by an adjacent enemy.
+func can_shoot(stack: CreatureStack) -> bool:
+	return stack.is_ranged() and stack.shots_left > 0 and not has_adjacent_enemy(stack)
+
+## A ranged attack: spends a shot, defender never retaliates. Caller checks can_shoot() first.
+func shoot(attacker: CreatureStack, defender: CreatureStack) -> void:
+	attacker.shots_left -= 1
+	deal_damage(attacker, defender)
+
+## A melee strike on an adjacent enemy: the defender hits back once per round if it survives.
+func melee(attacker: CreatureStack, defender: CreatureStack) -> void:
+	deal_damage(attacker, defender)
+	if defender.is_alive() and not defender.retaliated:
+		defender.retaliated = true
+		deal_damage(defender, attacker)
 
 ## Resolve `attacker` hitting `defender`: roll damage (HoMM3 formula, seeded RNG so battles are
 ## reproducible), apply casualties, and return the damage dealt. Retaliation is the caller's job.

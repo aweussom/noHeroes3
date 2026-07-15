@@ -62,11 +62,14 @@ Principles that keep it reviewable:
   - ✅ **M4.3** — attacks: HoMM3 damage formula on the seeded RNG (injected, so `BattleModel` stays
     unit-testable), casualties with wound carry-over (`top_hp`), ranged shots + melee-pin rule,
     one retaliation per round.
-  - ⬜ **M4.4** — deterministic enemy AI (`BattleAI`).
+  - ✅ **M4.4** — deterministic enemy AI (`BattleAI`): shoot the biggest threat when clear,
+    strike/charge in melee, otherwise advance — deterministic tie-breaks throughout, verified
+    headless (same seed → identical battle twice). Includes minimal victory detection
+    (`BattleModel.winner()`) + a Victory/Defeat banner.
   - ⬜ **M4.5** — real battlefield + creature sprites via `AssetLibrary` (luminous placeholder
     tokens today).
-  - ⬜ Victory detection + the result applied to the hero's actual army; battles triggered by
-    walking into map monsters instead of the debug button.
+  - ⬜ The battle result applied to the hero's actual army; battles triggered by walking into
+    map monsters instead of the debug button.
   - ⬜ **Battle state in the autosave.** The core drop-and-resume promise must hold mid-battle
     too — today a battle silently vanishes if the app is killed, and the consumed RNG state means
     it can't be replayed. Design this in with M4, not after.

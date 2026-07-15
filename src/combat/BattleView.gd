@@ -4,16 +4,20 @@ extends CanvasLayer
 ## night-tint CanvasModulate and camera: it draws in screen space on an opaque dark background that
 ## both hides the map and swallows input meant for it. Built in code, like HUD, to stay auditable.
 ##
-## M4.1 just stages the battle (grid + armies) with an End Battle button. Turn order, movement,
-## attacks and AI land in M4.2-M4.4; this view grows to handle their input and animation.
+## The full turn loop runs here: player stacks act by tap (move / attack), enemy stacks act through
+## BattleAI with a short beat between actions so the fight stays readable. When a side is wiped the
+## view announces the outcome; End Battle closes it (M4 remaining: apply the result to the map).
 
 signal finished
 
 const BG_COLOR := Color(0.03, 0.04, 0.06, 1.0)
+const AI_STEP_DELAY := 0.4   # seconds before each enemy action — a calm, followable pace
 
 var _model: BattleModel
 var _field: BattleField
+var _ai := BattleAI.new()
 var _reachable: Array[Vector2i] = []
+var _outcome: Label   # victory/defeat banner, created once the battle is decided
 
 func _ready() -> void:
 	layer = 20   # above the adventure map and its HUD
@@ -52,15 +56,26 @@ func setup(model: BattleModel) -> void:
 	_field.position = (view_size - field_size) * 0.5
 	_begin_turn()
 
-# Advance to the next stack the player controls, auto-passing enemy turns (placeholder for the
-# M4.4 AI), then highlight it and its movement range.
+# Start the next stack's turn. Player stacks get highlights and wait for a tap; enemy stacks act
+# through BattleAI after a short beat (ringed first, so she can see whose move it was), then the
+# turn advances. Once a side is wiped, announce the outcome instead.
 func _begin_turn() -> void:
-	var guard := 0
-	while _model.active_stack() != null and _model.active_stack().side == 1 and guard < 1000:
-		_model.advance_turn()
-		guard += 1
+	if _model.winner() != -1:
+		_show_outcome()
+		return
 	var stack := _model.active_stack()
-	_reachable = _model.reachable_hexes(stack) if stack != null else []
+	if stack == null:
+		return   # defensive; winner() above already covers a wiped side
+	if stack.side == 1:
+		_reachable = []
+		_field.set_highlights(stack, [])
+		await get_tree().create_timer(AI_STEP_DELAY).timeout
+		if not is_inside_tree():
+			return   # battle was closed while we waited
+		_ai.take_turn(_model, stack)
+		_end_turn()
+		return
+	_reachable = _model.reachable_hexes(stack)
 	_field.set_highlights(stack, _reachable)
 
 func _skip() -> void:
@@ -72,7 +87,7 @@ func _skip() -> void:
 func _on_field_input(event: InputEvent) -> void:
 	var tapped: bool = (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT) \
 		or (event is InputEventScreenTouch and event.pressed)
-	if not tapped:
+	if not tapped or _model.winner() != -1:
 		return
 	var stack := _model.active_stack()
 	if stack == null or stack.side != 0:
@@ -90,11 +105,10 @@ func _end_turn() -> void:
 	_begin_turn()
 
 # Attack a target: shoot if ranged and clear of melee; otherwise close to an adjacent hex (if
-# reachable) and strike, taking one retaliation if the defender survives.
+# reachable) and strike. Shot/retaliation rules live in BattleModel, shared with BattleAI.
 func _try_attack(attacker: CreatureStack, target: CreatureStack) -> void:
-	if attacker.is_ranged() and attacker.shots_left > 0 and not _model.has_adjacent_enemy(attacker):
-		attacker.shots_left -= 1
-		_model.deal_damage(attacker, target)
+	if _model.can_shoot(attacker):
+		_model.shoot(attacker, target)
 		_end_turn()
 		return
 
@@ -104,11 +118,23 @@ func _try_attack(attacker: CreatureStack, target: CreatureStack) -> void:
 			return   # can't reach the target this turn
 		attacker.hex = spot
 
-	_model.deal_damage(attacker, target)
-	if target.is_alive() and not target.retaliated:
-		target.retaliated = true
-		_model.deal_damage(target, attacker)
+	_model.melee(attacker, target)
 	_end_turn()
+
+# The battle is decided: clear the highlights and announce it, dim and centred near the top.
+# The End Battle button (always on screen) is the way out.
+func _show_outcome() -> void:
+	_field.set_highlights(null, [])
+	if _outcome != null:
+		return
+	_outcome = Label.new()
+	_outcome.text = "Victory!" if _model.winner() == 0 else "Defeat..."
+	_outcome.add_theme_font_size_override("font_size", 48)
+	_outcome.add_theme_color_override("font_color", Color(0.9, 0.82, 0.55))   # warm, dim (HUD tone)
+	_outcome.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_outcome.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_outcome.offset_top = 48
+	add_child(_outcome)
 
 # A reachable empty hex next to the target, or (-1, -1) if none.
 func _reachable_adjacent_to(target: CreatureStack) -> Vector2i:
