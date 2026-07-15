@@ -53,7 +53,23 @@ Principles that keep it reviewable:
   HIDDEN/EXPLORED/VISIBLE + `FogView` veil); luminous night lighting (`FogLayer` CanvasModulate +
   a warm hero `Light2D`); real HoMM3 terrain + directional animated hero via `AssetLibrary`; and
   autosave + instant resume (`SaveGame`, autosaves on move/turn/app-pause, resumes on launch).
-- **M4 — Combat.** ⬜ Enter a hex battle scene, deterministic AI opponent, resolve, return to map.
+- **M4 — Combat.** 🟡 In progress. A battle already runs end-to-end (entered via a debug HUD
+  button with test armies; enemy stacks passively skip their turns until the AI lands):
+  - ✅ **M4.1** — battle scaffold: 15×11 hex battlefield as a `CanvasLayer` overlay (`BattleView` /
+    `BattleField`), armies deployed HoMM3-style, enter/exit from the adventure map.
+  - ✅ **M4.2** — turn order (fastest-first, deterministic tie-break) + tap-to-move hex movement
+    (BFS range, blocked by stacks).
+  - ✅ **M4.3** — attacks: HoMM3 damage formula on the seeded RNG (injected, so `BattleModel` stays
+    unit-testable), casualties with wound carry-over (`top_hp`), ranged shots + melee-pin rule,
+    one retaliation per round.
+  - ⬜ **M4.4** — deterministic enemy AI (`BattleAI`).
+  - ⬜ **M4.5** — real battlefield + creature sprites via `AssetLibrary` (luminous placeholder
+    tokens today).
+  - ⬜ Victory detection + the result applied to the hero's actual army; battles triggered by
+    walking into map monsters instead of the debug button.
+  - ⬜ **Battle state in the autosave.** The core drop-and-resume promise must hold mid-battle
+    too — today a battle silently vanishes if the app is killed, and the consumed RNG state means
+    it can't be replayed. Design this in with M4, not after.
 
 ## Asset pipeline (Python, build-time)
 
@@ -88,4 +104,7 @@ Start with **one** hand-picked, simple map.
 
 - [x] **Godot version** — 4.7 stable / Standard / GDScript (see Engine config above).
 - [ ] Which map(s) to remake first (a small, simple one for M1).
-- [ ] Creature / army subset for the combat MVP (M4).
+- [x] Creature / army subset for the combat MVP (M4) — a 7-creature SoD roster (Pikeman, Archer,
+  Griffin, Swordsman, Gnoll, Wolf Rider, Orc) lives in `src/combat/Creature.gd`.
+- [ ] `h3m_to_json.py` (map pipeline) is not started — the game still runs on the hand-made
+  `data/maps/sample.json`.

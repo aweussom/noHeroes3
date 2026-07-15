@@ -19,10 +19,15 @@ the forward plan and milestones live in [`PLAN.md`](./PLAN.md).
 | **M1** — map on screen (model, placeholder terrain, touch camera) | ✅ done |
 | **M2** — move a hero (A* pathfinding, tap-to-move, movement budget) | ✅ done |
 | **M3** — the look + persistence (fog-of-war, night lighting, real art, autosave/resume) | ✅ done |
-| **M4** — combat | ⬜ not started |
+| **M4** — combat (hex battlefield, turn order, movement, attacks/damage/retaliation) | 🟡 in progress |
 
-**Asset pipeline (Python, build-time):** stage 1 `extract_lod` ✅ · stage 2 `pcx_to_png` ✅ ·
-stage 3 `def_to_atlas` 🟡 in progress.
+M4 so far (M4.1–M4.3): a battle runs end-to-end against a passive enemy, entered via a debug HUD
+button with test armies. Still to come: deterministic enemy AI, victory + result applied back to
+the map, battles triggered by map monsters, battle art, and battle state in the autosave — see
+[`PLAN.md`](./PLAN.md).
+
+**Asset pipeline (Python, build-time):** ✅ complete and verified in-game (HD `.pak` pixels +
+classic `.lod`/`.def` geometry — see below).
 
 ## Layout
 
@@ -31,6 +36,7 @@ src/        Godot game (GDScript)
   core/     pure data, no rendering — GameState, MapModel, Hero, FogModel, Pathfinder, SaveGame
   map/      rendering & camera — MapView, HeroView, FogView, FogLayer, CameraRig
   input/    touch → intents — TouchInput
+  combat/   hex battle — BattleModel, BattleView, BattleField, Creature, CreatureStack, BattleAI
   ui/       HUD
 tooling/    Python, build-time only — the asset & map pipelines (see below)
 data/maps/  converted map JSON (loaded by MapModel)
